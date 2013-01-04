@@ -14,7 +14,7 @@ import javax.tools.SimpleJavaFileObject;
  * It uses URI with scheme mem: (mem://classFQN+KIND) to represent JavaFileObject URI.
  * @author vladimir vivien
  */
-public class InMemoryFile extends SimpleJavaFileObject {
+public class StringSourceFile extends SimpleJavaFileObject {
     private ByteArrayOutputStream byteCodeStore = new ByteArrayOutputStream();;
     private String classFQN;
     private URI classUri ;
@@ -25,7 +25,7 @@ public class InMemoryFile extends SimpleJavaFileObject {
      * @param uri - the URI for the source file.
      * @param code - the source code.
      */
-    private InMemoryFile(final URI uri, final String fqn, final String code) {
+    private StringSourceFile(final URI uri, final String fqn, final String code) {
         super(uri, JavaFileObject.Kind.SOURCE);
         classUri = uri ;
         this.classFQN = fqn;
@@ -36,35 +36,35 @@ public class InMemoryFile extends SimpleJavaFileObject {
      * Creates an instance of InMemoryJavaFileObject of KIND.CLASS.
      * @param uri - the URI for the class file. 
      */
-    private InMemoryFile (final URI uri, final String fqn){
+    private StringSourceFile (final URI uri, final String fqn){
         super(uri, Kind.CLASS);
         classUri = uri;
         classFQN = fqn;
     }
     
     /**
-     * Static factory method to create an InMemoryFile of type KIND.SOURCE.
+     * Static factory method to create an StringSourceFile of type KIND.SOURCE.
      * @param classFQN - class fully-qualified class name (package.ClassName)
      * @param source - the java source code represented by that file
      * @return 
      */
-    public static InMemoryFile createInstanceForSource(final String classFQN, final String source){
+    public static StringSourceFile createInstanceForSource(final String classFQN, final String source){
         URI uri = FileManager.toUri(classFQN,Kind.SOURCE);
         if(source == null){
             throw new RuntimeException ("Source cannot be null.");
         }
         
-        return new InMemoryFile(uri, classFQN, source);
+        return new StringSourceFile(uri, classFQN, source);
     }
     
     /**
-     * Static factory method to create an InMemoryFile of KIND.CLASS.
+     * Static factory method to create an StringSourceFile of KIND.CLASS.
      * @param classFQN - fully-qualified class name
      * @return 
      */
-    public static InMemoryFile createInstanceForClass(final String classFQN){
+    public static StringSourceFile createInstanceForClass(final String classFQN){
         URI uri = FileManager.toUri(classFQN,Kind.CLASS);
-        return new InMemoryFile(uri, classFQN);
+        return new StringSourceFile(uri, classFQN);
     }
 
     @Override

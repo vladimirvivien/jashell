@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.tools.FileObject;
@@ -15,7 +16,7 @@ import javax.tools.JavaFileObject.Kind;
 /**
  * A JavaFileManager implementation used to manage JavaFileObject during
  * compilation.  It extends the ForwardingJavaFileManager and has the ability
- * to manage JavaFileObject backed by the Filesystem or InMemoryFile for 
+ * to manage JavaFileObject backed by the Filesystem or StringSourceFile for 
  * JavaFileObject managed in memory.
  * @author vladimir vivien
  */
@@ -72,22 +73,33 @@ public class FileManager extends ForwardingJavaFileManager<JavaFileManager>{
             classLoader = new InMemClassLoader(this);
         }
     }
-    
-    public void addSourceFile(String classFQN, JavaFileObject file){
-        assertInMemFlag();
-        if(!(file instanceof InMemoryFile) ){
-            throw new IllegalArgumentException ("JavaFileObject must be an instance of InMemoryFile");
-        }
-        
-        if(file != null && file.getKind().equals(Kind.SOURCE)){
-            srcStore.put(toUri(classFQN, file.getKind()), file);
+       
+    public void addSourceFile(final JavaFileObject file){
+        if(file != null){
+            srcStore.put(file.toUri(), file);
         }
     }
     
-    public JavaFileObject getSourceFile(String classFQN){
-        assertInMemFlag();
-        return srcStore.get(toUri(classFQN, Kind.SOURCE));
+    public void addSourceFiles(List<JavaFileObject> files){
+        for(JavaFileObject jfo : files){
+            addSourceFile(jfo);
+        }
     }
+    
+    public JavaFileObject getSourceFile(URI uri){
+        return srcStore.get(uri);
+    }
+    
+    public List<JavaFileObject> getAllSourceFiles() {
+        List<JavaFileObject> result = new ArrayList<JavaFileObject>(srcStore.size());
+        for(Map.Entry<URI, JavaFileObject> e : srcStore.entrySet()){
+            JavaFileObject jfo = e.getValue();
+            if(jfo != null){
+                result.add(jfo);
+            }
+        }
+        return result;
+    }    
     
     public JavaFileObject getClassFile(String classFQN){
         assertInMemFlag();
@@ -107,7 +119,7 @@ public class FileManager extends ForwardingJavaFileManager<JavaFileManager>{
     public JavaFileObject getJavaFileForOutput(Location location,
             String className, JavaFileObject.Kind kind, FileObject sibling) throws IOException{
         if(inMemory){
-            InMemoryFile classFile =  InMemoryFile.createInstanceForClass(className);
+            StringSourceFile classFile =  StringSourceFile.createInstanceForClass(className);
             classStore.put(toUri(className,kind), classFile);
             return classFile;
         }
@@ -116,7 +128,7 @@ public class FileManager extends ForwardingJavaFileManager<JavaFileManager>{
     
     @Override
     public String inferBinaryName(JavaFileManager.Location location, JavaFileObject file){
-        return (file instanceof InMemoryFile) ? file.getName() : super.inferBinaryName(location, file);
+        return (file instanceof StringSourceFile) ? file.getName() : super.inferBinaryName(location, file);
     }
    
     @Override
@@ -184,7 +196,7 @@ public class FileManager extends ForwardingJavaFileManager<JavaFileManager>{
                 throw new ClassNotFoundException (classFQN);
             }
             
-            byte[] byteCode = ((InMemoryFile)jfo).getByteCode();
+            byte[] byteCode = ((StringSourceFile)jfo).getByteCode();
             Class cl = defineClass(classFQN, byteCode, 0, byteCode.length);
 
             if(cl == null){

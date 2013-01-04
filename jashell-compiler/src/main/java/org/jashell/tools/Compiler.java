@@ -4,6 +4,7 @@
  */
 package org.jashell.tools;
 
+import com.sun.media.jai.opimage.AddCRIF;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.PrintWriter;
@@ -69,7 +70,7 @@ public class Compiler {
     private StandardJavaFileManager jfm = javac.getStandardFileManager(null, null, null);
     private Map<String,String> options = new LinkedHashMap<String,String>();
     private FileManager fileManager;
-    private List<JavaFileObject> sourcepath = new ArrayList<JavaFileObject>();
+    //private List<JavaFileObject> sourcepath = new ArrayList<JavaFileObject>();
     private Writer javacOut = new PrintWriter(System.out);
     
     private Compiler() {
@@ -92,6 +93,12 @@ public class Compiler {
         return c;
     }
     
+    /**
+     * Adds an javac compiler option.
+     * @param op option type
+     * @param value value
+     * @return 
+     */
     public Compiler addOption (final Option op, final String value){
         addOption(op.get(), value);
         return this;
@@ -107,7 +114,7 @@ public class Compiler {
     public Compiler addOption(final String option, final String value){
         options.put(option, value);
         if(option.equals(Option.SOURCEPATH.get())){
-            collectFiles(new File(value));
+            collectJavaSourceFilesFromDir(new File(value));
         }
         return this;
     }
@@ -127,14 +134,26 @@ public class Compiler {
         return Collections.unmodifiableList(result);
     }
     
+    /**
+     * Stores the source string as a Java source file to the source path.
+     * @param classFQN the fully qualified class name
+     * @param source the String value representing the java source.
+     * @return 
+     */
     public Compiler addJavaSource(final String classFQN, final String source){
         if(classFQN == null || source == null) return this;
-        InMemoryFile f = InMemoryFile.createInstanceForSource(classFQN, source);
-        sourcepath.add(f);
+        StringSourceFile f = StringSourceFile.createInstanceForSource(classFQN, source);
+        fileManager.addSourceFile(f);
         return this;
     }
     
-    public Compiler addJavaSource(final Map<String,String> sources){
+    /**
+     * Designed to add multiple String values as Java sources to the source path.
+     * @param sources a map where key=classFQN and value=java source code
+     * @return 
+     * @see org.jashell.tools.Compiler#addJavaSources(java.lang.String, java.lang.String) 
+     */
+    public Compiler addJavaSources(final Map<String,String> sources){
         if(sources == null || sources.size() == 0) return this;
         for(Map.Entry<String,String> e : sources.entrySet()){
             addJavaSource(e.getKey(), e.getValue());
@@ -143,23 +162,32 @@ public class Compiler {
         return this;
     }
     
+    /**
+     * Adds an array of File objects as Java source files to the source path.
+     * @param files array of File instances
+     * @return 
+     */
     public Compiler addJavaSource(final File ... files){
         Iterable<? extends JavaFileObject> jfos = jfm.getJavaFileObjects(files);
-        for(JavaFileObject jfo : jfos){
-            sourcepath.add(jfo);
-        }
+        fileManager.addSourceFiles((List<JavaFileObject>)jfos);
         return this;
     }
     
     public List<JavaFileObject> getSourceFiles() {
-        return Collections.unmodifiableList(sourcepath);
+        return Collections.unmodifiableList(fileManager.getAllSourceFiles());
     }
         
     /**
      * Compiles the provided sourcepath or the path specified in options.
      */
     public void compile(){
-        CompilationTask task = javac.getTask(javacOut, fileManager, null, getOptionsAsList(), null, sourcepath);
+        CompilationTask task = javac.getTask(
+                javacOut, 
+                fileManager, 
+                null, 
+                getOptionsAsList(), 
+                null, 
+                fileManager.getAllSourceFiles());
         Boolean compiled = task.call();
     }
 
@@ -168,19 +196,19 @@ public class Compiler {
      * @param rootDir
      * @return 
      */
-    private void collectFiles(File rootDir){
+    private void collectJavaSourceFilesFromDir(File rootDir){
         File[] dirList = rootDir.listFiles();
         List<File> collectedFiles = new ArrayList();
         for(File f : dirList){
             if(f.isDirectory()){
-                collectFiles(f);
+                collectJavaSourceFilesFromDir(f);
             }
             if(f.isFile() && f.getName().endsWith(Kind.SOURCE.extension)){
                 collectedFiles.add(f);
             }
         }
         List<JavaFileObject> jfos = (List<JavaFileObject>) jfm.getJavaFileObjectsFromFiles(collectedFiles);
-        sourcepath.addAll(jfos);
+        fileManager.addSourceFiles(jfos);
     }
     
     private void assertCompilerTool() {

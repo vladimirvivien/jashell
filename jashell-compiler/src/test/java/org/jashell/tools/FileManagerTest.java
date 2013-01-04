@@ -7,9 +7,12 @@ package org.jashell.tools;
 import java.io.File;
 import java.io.InputStream;
 import java.net.URI;
+import java.util.List;
 import javax.tools.JavaCompiler;
 import javax.tools.JavaFileObject;
 import javax.tools.JavaFileObject.Kind;
+import javax.tools.SimpleJavaFileObject;
+import javax.tools.StandardJavaFileManager;
 import javax.tools.ToolProvider;
 import org.apache.bcel.classfile.JavaClass;
 import org.testng.Assert;
@@ -25,6 +28,8 @@ import org.testng.annotations.Test;
  */
 public class FileManagerTest {
     private JavaCompiler toolCompiler = ToolProvider.getSystemJavaCompiler();
+    private StandardJavaFileManager jfm = toolCompiler.getStandardFileManager(null, null, null);
+    final String SOURCE_PATH = "./mock-src";
     final String PACKAGE_NAME = "mock.filemanager";
     
     public FileManagerTest() {
@@ -61,17 +66,32 @@ public class FileManagerTest {
     }
     
     @Test
+    public void testSourceFileStorage() {
+        FileManager fm = FileManager.createInstance(jfm);
+        File[] sources = { 
+            new File(SOURCE_PATH+"/mock/","C.java"),
+            new File(SOURCE_PATH+"/mock/pack0/", "A.java"),
+            new File(SOURCE_PATH+"/mock/pack1/", "B.java")
+        };
+        
+        Iterable<? extends JavaFileObject> jfos = jfm.getJavaFileObjects(sources);
+        fm.addSourceFiles((List<JavaFileObject>)jfos);
+        Assert.assertEquals(fm.getAllSourceFiles().size(), 3);
+        Assert.assertTrue(fm.getAllSourceFiles().get(0).getName().contains("C.java"));
+    }
+    
+    @Test
     public void testInMemoryCompilation() throws Exception{
         String className = "ClassA000";
         String classFqn  = PACKAGE_NAME + "." + className;
         
         Assert.assertNotNull(toolCompiler);
-        FileManager fm = FileManager.createInMemoryInstance(toolCompiler.getStandardFileManager(null, null, null));
+        FileManager fm = FileManager.createInMemoryInstance(jfm);
         
         String sourceCode = MockHelper.generateSimpleClassSource(PACKAGE_NAME, className);
         
-        InMemoryFile f = InMemoryFile.createInstanceForSource(classFqn, sourceCode);
-        fm.addSourceFile(classFqn, f);
+        StringSourceFile f = StringSourceFile.createInstanceForSource(classFqn, sourceCode);
+        fm.addSourceFile(f);
         MockCompiler javac = new MockCompiler(fm);
         Assert.assertTrue(javac.getJavaFileManager().getClass().isAssignableFrom(FileManager.class));
         Boolean compiled = javac.compile(f);
@@ -101,9 +121,9 @@ public class FileManagerTest {
         String sourceCode = MockHelper.generateSimpleClassSource(PACKAGE_NAME, className);
         
         Assert.assertNotNull(toolCompiler);
-        FileManager fm = FileManager.createInstance(toolCompiler.getStandardFileManager(null, null, null));
+        FileManager fm = FileManager.createInstance(jfm);
         
-        InMemoryFile f = InMemoryFile.createInstanceForSource(classFqn, sourceCode);
+        StringSourceFile f = StringSourceFile.createInstanceForSource(classFqn, sourceCode);
         MockCompiler javac = new MockCompiler(fm);
         Assert.assertTrue(javac.getJavaFileManager().getClass().isAssignableFrom(FileManager.class));
         Boolean compiled = javac.compile(f);
@@ -131,12 +151,12 @@ public class FileManagerTest {
         String classFqn  = PACKAGE_NAME + "." + className;
         
         Assert.assertNotNull(toolCompiler);
-        FileManager fm = FileManager.createInMemoryInstance(toolCompiler.getStandardFileManager(null, null, null));
+        FileManager fm = FileManager.createInMemoryInstance(jfm);
         
         String sourceCode = MockHelper.generateSimpleClassSource(PACKAGE_NAME, className);
         
-        InMemoryFile f = InMemoryFile.createInstanceForSource(classFqn, sourceCode);
-        fm.addSourceFile(classFqn, f);
+        StringSourceFile f = StringSourceFile.createInstanceForSource(classFqn, sourceCode);
+        fm.addSourceFile(f);
         MockCompiler javac = new MockCompiler(fm);
         Assert.assertTrue(javac.getJavaFileManager().getClass().isAssignableFrom(FileManager.class));
         Boolean compiled = javac.compile(f);

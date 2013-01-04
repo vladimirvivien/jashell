@@ -8,7 +8,7 @@ import org.apache.bcel.classfile.JavaClass;
 import org.testng.annotations.Test;
 import org.testng.Assert;
 
-public class InMemoryFileTest {
+public class StringSourceFileTest {
     final String PACKAGE_NAME = "mock";
     final String CLASS_NAME = "InMemoryTestClass";
     final String CLASS_FQN = PACKAGE_NAME +"." + CLASS_NAME;
@@ -18,11 +18,11 @@ public class InMemoryFileTest {
             + "    public static final void f(){}"
             + "}";
     
-    public InMemoryFileTest() {}
+    public StringSourceFileTest() {}
     
     @Test
     public void testCreateForSourceCode() throws Exception{
-        InMemoryFile f = InMemoryFile.createInstanceForSource(CLASS_FQN, SOURCE_CODE);
+        StringSourceFile f = StringSourceFile.createInstanceForSource(CLASS_FQN, SOURCE_CODE);
         Assert.assertEquals(f.getClassFQN(), CLASS_FQN);
         Assert.assertEquals(f.getCharContent(true), SOURCE_CODE);
         Assert.assertEquals(f.getKind(), Kind.SOURCE);
@@ -31,7 +31,7 @@ public class InMemoryFileTest {
 
     @Test
     public void testCreateForClass() throws Exception{
-        InMemoryFile f = InMemoryFile.createInstanceForClass(CLASS_FQN);
+        StringSourceFile f = StringSourceFile.createInstanceForClass(CLASS_FQN);
         Assert.assertEquals(f.getClassFQN(), CLASS_FQN);
         Assert.assertEquals(f.getKind(), Kind.CLASS);
         Assert.assertEquals(f.toUri(), FileManager.toUri(CLASS_FQN,Kind.CLASS));
@@ -39,7 +39,7 @@ public class InMemoryFileTest {
     
     @Test
     public void testCompilationIntegration() throws Exception{
-        InMemoryFile f = InMemoryFile.createInstanceForSource(CLASS_FQN, SOURCE_CODE);
+        StringSourceFile f = StringSourceFile.createInstanceForSource(CLASS_FQN, SOURCE_CODE);
         MockCompiler javac = new MockCompiler();
         Boolean compiled = javac.compile(f);
         Assert.assertTrue(compiled);
