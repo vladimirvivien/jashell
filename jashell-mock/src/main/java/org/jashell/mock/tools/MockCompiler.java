@@ -1,4 +1,4 @@
-package org.jashell.tools;
+package org.jashell.mock.tools;
 
 import java.io.File;
 import java.io.IOException;

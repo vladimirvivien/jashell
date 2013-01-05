@@ -84,7 +84,7 @@ public class StringSourceFile extends SimpleJavaFileObject {
     }
     
     /**
-     * A opens a stream for writing bytecode for file object
+     * opens a stream for writing bytecode for file object
      * @return an OutputStream to write bytecode to.
      * @throws IOException 
      */
@@ -92,6 +92,11 @@ public class StringSourceFile extends SimpleJavaFileObject {
     public OutputStream openOutputStream() throws IOException {
         byteCodeStore = new ByteArrayOutputStream();
         return byteCodeStore;
+    }
+    
+    @Override
+    public String getName() {
+        return classFQN;
     }
     
     /**

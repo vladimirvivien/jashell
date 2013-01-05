@@ -4,6 +4,8 @@
  */
 package org.jashell.tools;
 
+import org.jashell.mock.tools.MockHelper;
+import org.jashell.mock.tools.MockCompiler;
 import java.io.File;
 import java.io.InputStream;
 import java.net.URI;

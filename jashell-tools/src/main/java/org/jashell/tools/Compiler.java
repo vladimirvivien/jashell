@@ -4,17 +4,16 @@
  */
 package org.jashell.tools;
 
-import com.sun.media.jai.opimage.AddCRIF;
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.PrintWriter;
 import java.io.Writer;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import javax.tools.Diagnostic;
+import javax.tools.DiagnosticCollector;
 import javax.tools.JavaCompiler;
 import javax.tools.JavaCompiler.CompilationTask;
 import javax.tools.JavaFileObject;
@@ -67,11 +66,11 @@ public class Compiler {
     }
     
     private JavaCompiler javac = ToolProvider.getSystemJavaCompiler();
-    private StandardJavaFileManager jfm = javac.getStandardFileManager(null, null, null);
+    private CompilationDiagnosticHandler diagsHandler = new CompilationDiagnosticHandler();
+    private StandardJavaFileManager jfm = javac.getStandardFileManager(diagsHandler, null, null);
     private Map<String,String> options = new LinkedHashMap<String,String>();
     private FileManager fileManager;
-    //private List<JavaFileObject> sourcepath = new ArrayList<JavaFileObject>();
-    private Writer javacOut = new PrintWriter(System.out);
+    private Writer diagWriter = new PrintWriter(System.err);
     
     private Compiler() {
         assertCompilerTool();
@@ -176,15 +175,23 @@ public class Compiler {
     public List<JavaFileObject> getSourceFiles() {
         return Collections.unmodifiableList(fileManager.getAllSourceFiles());
     }
-        
+    
+    public void setDiagnosticWriter(Writer w){
+        diagWriter = w;
+    }
+    
+    public List<CompilationDiagnostic> getCompilationDiagnostics(){
+        return diagsHandler.getCompilationDiagnostics();
+    }
+    
     /**
      * Compiles the provided sourcepath or the path specified in options.
      */
     public void compile(){
         CompilationTask task = javac.getTask(
-                javacOut, 
+                diagWriter, 
                 fileManager, 
-                null, 
+                diagsHandler, 
                 getOptionsAsList(), 
                 null, 
                 fileManager.getAllSourceFiles());

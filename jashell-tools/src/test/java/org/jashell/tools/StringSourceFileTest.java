@@ -1,5 +1,6 @@
 package org.jashell.tools;
 
+import org.jashell.mock.tools.MockCompiler;
 import java.io.InputStream;
 import java.util.Arrays;
 import javax.tools.JavaFileObject;

@@ -4,8 +4,9 @@
  */
 package org.jashell.tools;
 
+import org.jashell.mock.tools.MockHelper;
 import java.io.File;
-import java.util.Arrays;
+import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +21,7 @@ import org.testng.annotations.Test;
 public class CompilerTest {
     private static final String SOURCE_PATH = "./mock-src";
     private static final String OUTPUT_DIR  = "./target";
+    private static final String CLASS_PATH  = "./lib/mock-lib.jar";
     private Compiler c;
     public CompilerTest() {
     }
@@ -60,7 +62,7 @@ public class CompilerTest {
     @Test
     public void testAddSourceFile() {
         c = Compiler.createCompiler();
-        c.addJavaSource("mock", MockHelper.generateSimpleClassSource("mock", "ClassC000"));
+        c.addJavaSource("mock.ClassC000", MockHelper.generateSimpleClassSource("mock", "ClassC000"));
         c.addJavaSource(new File(SOURCE_PATH+"/mock/","C.java"));
         Assert.assertEquals(c.getSourceFiles().size(), 2);
         Assert.assertEquals(c.getSourceFiles().get(0).getKind(), Kind.SOURCE);
@@ -86,7 +88,7 @@ public class CompilerTest {
     }
     
     @Test
-    public void testCompilationWithSourcePathSpecified() throws Exception{
+    public void testCompilationWithSourcepathSpecified() throws Exception{
         c = Compiler.createCompiler()
             .addOption(Compiler.Option.SOURCEPATH, SOURCE_PATH)
             .addOption(Compiler.Option.D_DIRECTORY, OUTPUT_DIR);
@@ -96,6 +98,39 @@ public class CompilerTest {
         Assert.assertTrue(new File(OUTPUT_DIR+"/mock/pack1/B.class").exists());
     }
     
+    @Test
+    public void testCompilationWithClasspathSpecified() {
+        c = Compiler.createCompiler()
+            .addOption(Compiler.Option.CLASSPATH, CLASS_PATH)
+            .addOption(Compiler.Option.D_DIRECTORY, OUTPUT_DIR);
+        c.addJavaSource("mock.ClassF000", MockHelper.generateClassSourceWithImport("mock", "ClassF000"));
+        c.compile();
+        for (CompilationDiagnostic diag : c.getCompilationDiagnostics()){
+            System.out.println (diag);
+        }
+        Assert.assertTrue(c.getCompilationDiagnostics().size() == 0);
+    }
+    
+    @Test
+    public void testCompilationDiagnostics() {
+        c = Compiler.createCompiler();
+        
+        // compile broken code
+        c.addJavaSource("mock.ClassD000", MockHelper.generateBrokenClassSource("mock", "ClassD000"));
+        c.compile();
+        List<CompilationDiagnostic> diags = c.getCompilationDiagnostics();
+        Assert.assertTrue(diags.size() > 0);
+        
+        // compile OK code
+        c = Compiler.createCompiler();
+        c.addJavaSource("mock.ClassE000", MockHelper.generateSimpleClassSource("mock", "ClassE000"));
+        c.compile();
+        diags = c.getCompilationDiagnostics();
+        Assert.assertTrue(diags.size() == 0);
+        for(CompilationDiagnostic diag : diags){
+            System.out.println (diag.toString());
+        }
+    }
     
     @BeforeClass
     public static void setUpClass() throws Exception {
